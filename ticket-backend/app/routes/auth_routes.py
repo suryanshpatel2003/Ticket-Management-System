@@ -18,7 +18,7 @@ def get_db():
         db.close()
 
 
-# 🔥 REQUEST SCHEMAS (IMPORTANT)
+# 🔥 REQUEST SCHEMAS
 class RegisterRequest(BaseModel):
     email: str
     password: str
@@ -29,25 +29,33 @@ class LoginRequest(BaseModel):
     password: str
 
 
-# 🔥 REGISTER API (BODY BASED)
+# 🔥 REGISTER API (ADMIN LOGIC ADDED)
 @router.post("/register")
 def register(data: RegisterRequest, db: Session = Depends(get_db)):
 
+    # check existing user
     if db.query(User).filter(User.email == data.email).first():
         raise HTTPException(status_code=400, detail="User already exists")
 
+    # 🔥 ADMIN LOGIC
+    role = "admin" if data.email == "admin@gmail.com" else "user"
+
     user = User(
         email=data.email,
-        password=hash_password(data.password)
+        password=hash_password(data.password),
+        role=role
     )
 
     db.add(user)
     db.commit()
 
-    return {"msg": "Registered successfully"}
+    return {
+        "msg": "Registered successfully",
+        "role": role   # optional (debug ke liye useful)
+    }
 
 
-# 🔥 LOGIN API (BODY BASED - FIXED)
+# 🔥 LOGIN API
 @router.post("/login")
 def login(data: LoginRequest, db: Session = Depends(get_db)):
 
